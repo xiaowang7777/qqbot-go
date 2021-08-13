@@ -60,7 +60,6 @@ func handleQRCodeWithTimeout(cli *client.QQClient, sig []byte, sec int32) error 
 	defer close(qrTimeoutChannel)
 
 	reference := utils.NewAtomicReference(false)
-
 	end := false
 	var errCon error = nil
 
