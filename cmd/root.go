@@ -4,6 +4,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"qqbot-go/config"
+	"qqbot-go/pkg/client"
 )
 
 var ROOT_CMD = cobra.Command{
@@ -13,10 +14,12 @@ var ROOT_CMD = cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		c := &config.Config{}
 		c.Load()
+		client.Run(c)
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		c := &config.Config{}
 		c.Load()
+		client.Run(c)
 	},
 }
 

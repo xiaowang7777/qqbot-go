@@ -12,11 +12,31 @@ import (
 const (
 	configFileName = ".qqbot.yaml"
 	configPathName = "/qq_bot/"
+
+	RSA EncryptType = 1
+	RES EncryptType = 2
 )
 
+type EncryptType uint8
+type GroupUin []int64
+type FriendUin []int64
+
 type Config struct {
-	Account  string `yaml:"account"`
-	Password string `yaml:"password"`
+	Account struct {
+		Uin      int64  `yaml:"uin"`
+		Password string `yaml:"password"`
+		Encrypt  struct {
+			Enable         bool        `yaml:"enable"`
+			Type           EncryptType `yaml:"type"`
+			DecodeFilePath string      `yaml:"decode_file_path"`
+			EncodeFilePath string      `yaml:"encode_file_path"`
+		} `yaml:"encrypt"`
+		ReLogin struct {
+			Enable   bool `yaml:"enable"`
+			Delay    uint `yaml:"delay"`
+			MaxTimes uint `yaml:"max_times"`
+		} `yaml:"re_login"`
+	} `yaml:"account"`
 }
 
 //New 新建Config结构体，并从配置文件中读取信息
@@ -32,7 +52,7 @@ func New() *Config {
 func (c *Config) Load() {
 	createFileIfNotExists()
 
-	filePath := filepath.Join(GetFileDir(), configFileName)
+	filePath := GetConfigFilePath()
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -59,7 +79,7 @@ func (c *Config) Load() {
 //Write 将Config信息写入到配置文件中
 func (c *Config) Write() {
 	//配置文件路径
-	filePath := filepath.Join(GetFileDir(), configFileName)
+	filePath := GetConfigFilePath()
 
 	file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE|os.O_TRUNC, 0644)
 
@@ -83,6 +103,10 @@ func (c *Config) Write() {
 
 func GetFileDir() string {
 	return filepath.Join(getConfigDirPath(), configPathName)
+}
+
+func GetConfigFilePath() string {
+	return filepath.Join(GetFileDir(), configFileName)
 }
 
 //createFileIfNotExists 当配置文件不存在时，创建它

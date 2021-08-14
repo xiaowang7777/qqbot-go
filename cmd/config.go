@@ -12,16 +12,16 @@ var CONFIG_CMD = cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		c := config.New()
-		if account, err := cmd.Flags().GetString("account"); err != nil {
+		if account, err := cmd.Flags().GetInt64("account"); err != nil {
 			logrus.Fatal(err)
 		} else {
-			c.Account = account
+			c.Account.Uin = account
 		}
 
 		if password, err := cmd.Flags().GetString("password"); err != nil {
 			logrus.Fatal(err)
 		} else {
-			c.Password = password
+			c.Account.Password = password
 		}
 
 		c.Write()
@@ -29,6 +29,6 @@ var CONFIG_CMD = cobra.Command{
 }
 
 func init() {
-	CONFIG_CMD.Flags().StringP("account", "a", "", "qq authentication account")
+	CONFIG_CMD.Flags().Int64P("account", "u", 0, "qq authentication account")
 	CONFIG_CMD.Flags().StringP("password", "p", "", "qq authentication password,use QR if null")
 }

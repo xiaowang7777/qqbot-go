@@ -4,14 +4,12 @@ import (
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/sirupsen/logrus"
 	"qqbot-go/config"
+	"qqbot-go/pkg/goal"
 )
 
-var (
-	ACCESS_TOKEN = ""
-)
-
-func Run(config *config.Config) {
-
+func Run(conf *config.Config) {
+	goal.SetConfig(conf)
+	login()
 }
 
 func newQQClient() *client.QQClient {
