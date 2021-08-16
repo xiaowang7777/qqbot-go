@@ -7,14 +7,12 @@ import (
 	"qqbot-go/pkg/client"
 )
 
-var ROOT_CMD = cobra.Command{
+var ROOT_CMD = &cobra.Command{
 	Use:   "qqbot",
 	Short: "qq bot",
 	Long:  `qq bot commend`,
 	Run: func(cmd *cobra.Command, args []string) {
-		c := &config.Config{}
-		c.Load()
-		client.Run(c)
+		cmd.Help()
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		c := &config.Config{}

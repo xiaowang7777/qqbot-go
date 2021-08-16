@@ -6,7 +6,7 @@ import (
 	"qqbot-go/config"
 )
 
-var CONFIG_CMD = cobra.Command{
+var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "",
 	Long:  ``,
@@ -29,6 +29,10 @@ var CONFIG_CMD = cobra.Command{
 }
 
 func init() {
-	CONFIG_CMD.Flags().Int64P("account", "u", 0, "qq authentication account")
-	CONFIG_CMD.Flags().StringP("password", "p", "", "qq authentication password,use QR if null")
+	configCmd.Flags().Int64P("account", "u", 0, "QQ账号.")
+	configCmd.Flags().StringP("password", "p", "", "QQ密码.")
+	configCmd.Flags().BoolP("encrypt", "e", false, "是否需要开启加密.")
+	configCmd.Flags().IntP("en-type", "", 1, `加密方式.
+1.RSA.
+2.DES.`)
 }

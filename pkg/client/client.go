@@ -9,7 +9,10 @@ import (
 
 func Run(conf *config.Config) {
 	goal.SetConfig(conf)
-	login()
+	_, err := login()
+	if err != nil {
+		logrus.Errorf("登陆失败，错误信息：%v", err)
+	}
 }
 
 func newQQClient() *client.QQClient {

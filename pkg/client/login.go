@@ -25,7 +25,9 @@ var (
 //login qq登录
 func login() (*client.QQClient, error) {
 	cli := newQQClient()
-	if len(goal.GetConfig().Account.Password) != 0 {
+	passwordFile := filepath.Join(config.GetFileDir(), passwordEncryptFileName)
+	//配置文件中未设置密码并且未找到密码文件时使用二维码登录
+	if len(goal.GetConfig().Account.Password) == 0 && !utils.CheckFileExists(passwordFile) {
 		if cliN, err := qrcodeLogin(cli); err != nil {
 			return nil, err
 		} else {
@@ -45,7 +47,7 @@ func login() (*client.QQClient, error) {
 //用户名密码登录
 func commonLogin(cli *client.QQClient) (*client.QQClient, error) {
 	cli.Uin = goal.GetConfig().Account.Uin
-	cli.PasswordMd5 = handlePassword(goal.GetConfig().Account.Password)
+	cli.PasswordMd5 = handlePassword()
 	response, err := cli.Login()
 	if err != nil {
 		return nil, err
@@ -82,7 +84,9 @@ func qrcodeLogin(cli *client.QQClient) (*client.QQClient, error) {
 
 //handleQRCodeWithTimeout 处理二维码登录扫码获取返回信息的操作
 func handleQRCodeWithTimeout(cli *client.QQClient, sig []byte, sec int32) (*client.QQClient, error) {
-	startTimeout(sec)
+	go func() {
+		startTimeout(60)
+	}()
 	defer close(qrTimeoutChannel)
 
 	reference := utils.NewAtomicReference(false)
@@ -92,6 +96,7 @@ func handleQRCodeWithTimeout(cli *client.QQClient, sig []byte, sec int32) (*clie
 	for {
 		select {
 		case <-qrTimeoutChannel:
+			logrus.Error("扫描二维码超时！")
 			return nil, errors.New("qrcode login timeout")
 		case <-time.After(time.Duration(1)):
 			if reference.CompareAndSet(false, true) {
@@ -213,12 +218,12 @@ func sendSms(cli *client.QQClient) (*client.QQClient, error) {
 	}
 }
 
-func startTimeout(sec int32) {
-	time.Sleep(time.Duration(sec))
+func startTimeout(sec int) {
+	time.Sleep(60 * time.Second)
 	qrTimeoutChannel <- &config.Config{}
 }
 
-func handlePassword(pass string) [16]byte {
-
-	return [16]byte{}
+func handlePassword() [16]byte {
+	handlePasswordEncrypt()
+	return handlePasswordDecrypt()
 }

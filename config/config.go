@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"qqbot-go/utils"
 	"runtime"
 )
 
@@ -14,7 +15,7 @@ const (
 	configPathName = "/qq_bot/"
 
 	RSA EncryptType = 1
-	RES EncryptType = 2
+	DES EncryptType = 2
 )
 
 type EncryptType uint8
@@ -26,10 +27,10 @@ type Config struct {
 		Uin      int64  `yaml:"uin"`
 		Password string `yaml:"password"`
 		Encrypt  struct {
-			Enable         bool        `yaml:"enable"`
-			Type           EncryptType `yaml:"type"`
-			DecodeFilePath string      `yaml:"decode_file_path"`
-			EncodeFilePath string      `yaml:"encode_file_path"`
+			Enable bool        `yaml:"enable"`
+			Type   EncryptType `yaml:"type"`
+			//DecodeFilePath string      `yaml:"decode_file_path"`
+			//EncodeFilePath string      `yaml:"encode_file_path"`
 		} `yaml:"encrypt"`
 		ReLogin struct {
 			Enable   bool `yaml:"enable"`
@@ -111,23 +112,26 @@ func GetConfigFilePath() string {
 
 //createFileIfNotExists 当配置文件不存在时，创建它
 func createFileIfNotExists() {
+	if !utils.CheckFileExists(GetFileDir()) {
+		if err := os.MkdirAll(GetFileDir(), 0666); err != nil {
+			panic(err)
+		}
+	}
 	filePath := filepath.Join(GetFileDir(), configFileName)
 	if _, err := os.Stat(filePath); err != nil {
 		if os.IsNotExist(err) {
 
 			file, err := os.Create(filePath)
-
+			if err != nil {
+				panic(err)
+			}
 			defer func() {
 				if err := file.Close(); err != nil {
-					logrus.Fatal(err)
+					panic(err)
 				}
 			}()
-
-			if err != nil {
-				logrus.Fatal(err)
-			}
 		} else {
-			logrus.Fatal(err)
+			panic(err)
 		}
 	}
 }
