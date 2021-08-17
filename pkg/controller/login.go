@@ -1,4 +1,4 @@
-package client
+package controller
 
 import (
 	"bytes"
@@ -15,6 +15,7 @@ import (
 	newError "qqbot-go/pkg/nerror"
 	"qqbot-go/utils"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,27 +23,9 @@ var (
 	qrTimeoutChannel = make(chan interface{})
 )
 
-//login qq登录
-func login() (*client.QQClient, error) {
-	cli := newQQClient()
-	passwordFile := filepath.Join(config.GetFileDir(), passwordEncryptFileName)
-	//配置文件中未设置密码并且未找到密码文件时使用二维码登录
-	if len(goal.GetConfig().Account.Password) == 0 && !utils.CheckFileExists(passwordFile) {
-		if cliN, err := qrcodeLogin(cli); err != nil {
-			return nil, err
-		} else {
-			cli = cliN
-		}
-	} else {
-		if cliN, err := commonLogin(cli); err != nil {
-			return nil, err
-		} else {
-			cli = cliN
-		}
-	}
-	logrus.Info("qq login complete.")
-	return cli, nil
-}
+const (
+	deviceJson = "device.json"
+)
 
 //用户名密码登录
 func commonLogin(cli *client.QQClient) (*client.QQClient, error) {
@@ -85,14 +68,14 @@ func qrcodeLogin(cli *client.QQClient) (*client.QQClient, error) {
 //handleQRCodeWithTimeout 处理二维码登录扫码获取返回信息的操作
 func handleQRCodeWithTimeout(cli *client.QQClient, sig []byte, sec int32) (*client.QQClient, error) {
 	go func() {
-		startTimeout(60)
+		defer close(qrTimeoutChannel)
+		startTimeout()
 	}()
-	defer close(qrTimeoutChannel)
 
 	reference := utils.NewAtomicReference(false)
 	end := false
 	var errCon error = nil
-
+	once := &sync.Once{}
 	for {
 		select {
 		case <-qrTimeoutChannel:
@@ -114,7 +97,9 @@ func handleQRCodeWithTimeout(cli *client.QQClient, sig []byte, sec int32) (*clie
 					case client.QRCodeTimeout:
 						logrus.Fatal("二维码过期")
 					case client.QRCodeWaitingForConfirm:
-						logrus.Info("扫码成功，请在手机端确认")
+						once.Do(func() {
+							logrus.Info("扫码成功，请在手机端确认")
+						})
 					case client.QRCodeConfirmed:
 						response, err := cli.QRCodeLogin(status.LoginInfo)
 						if err != nil {
@@ -218,12 +203,58 @@ func sendSms(cli *client.QQClient) (*client.QQClient, error) {
 	}
 }
 
-func startTimeout(sec int) {
+func startTimeout() {
 	time.Sleep(60 * time.Second)
+
 	qrTimeoutChannel <- &config.Config{}
 }
 
 func handlePassword() [16]byte {
 	handlePasswordEncrypt()
 	return handlePasswordDecrypt()
+}
+
+func newQQClient() *client.QQClient {
+	cli := client.NewClientEmpty()
+	cli.OnServerUpdated(func(qqClient *client.QQClient, event *client.ServerUpdatedEvent) bool {
+		return true
+	})
+	cli.OnLog(func(qqClient *client.QQClient, event *client.LogEvent) {
+		switch event.Type {
+		case "INFO":
+			logrus.Info(event.Message)
+		case "WARN":
+			logrus.Warn(event.Message)
+		case "ERROR":
+			logrus.Error(event.Message)
+		case "DEBUG":
+			logrus.Debug(event.Message)
+		}
+	})
+	//加载设备信息
+	deviceJsonFilePath := filepath.Join(config.GetFileDir(), deviceJson)
+	if utils.CheckFileExists(deviceJsonFilePath) {
+		logrus.Warnf("将使用于路径-> %s <-查找到模拟设备信息.", deviceJsonFilePath)
+		if fileBytes, err := os.ReadFile(deviceJsonFilePath); err != nil {
+			logrus.Errorf("读取模拟设备信息失败，请删除文件-> %s <-后再次启动bot", deviceJson)
+			os.Exit(1)
+		} else {
+			if err := client.SystemDeviceInfo.ReadJson(fileBytes); err != nil {
+				logrus.Errorf("读取模拟设备信息失败，请删除文件-> %s <-后再次启动bot", deviceJson)
+				os.Exit(1)
+			}
+		}
+	} else {
+		client.GenRandomDevice()
+		if err := utils.CreateIfNotExists(deviceJsonFilePath); err != nil {
+			logrus.Errorf("创建设备信息文件失败，错误信息：%v", err)
+			os.Exit(1)
+		} else {
+			if err := os.WriteFile(deviceJsonFilePath, client.SystemDeviceInfo.ToJson(), 0644); err != nil {
+				logrus.Errorf("将模拟设备信息写入文件失败，错误信息：%v", err)
+				os.Exit(1)
+			}
+		}
+	}
+	return cli
 }

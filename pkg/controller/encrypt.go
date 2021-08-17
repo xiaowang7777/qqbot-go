@@ -1,4 +1,4 @@
-package client
+package controller
 
 import (
 	"bytes"
@@ -119,37 +119,6 @@ func handleRSAEncrypt(password, passwordFile string) {
 		handlePasswordWriteToFile(rsaPublicFilePath, password, passwordFile)
 	}
 }
-
-////getPassword 获取明文的登录密码
-//func getPassword(conf *config.Config) string {
-//	password := conf.Account.Password
-//	if len(password) > 0 {
-//		return password
-//	}
-//	if conf.Account.Encrypt.Enable {
-//		logrus.Warn("已开启密码加密功能，但未找到密码信息.")
-//	} else {
-//		logrus.Warn("未开启密码加密功能，但未找到密码信息.")
-//	}
-//
-//	logrus.Warn("请选择以下方法输入密码（5秒后自动选2）：")
-//	logrus.Warn("1.直接输入.")
-//	logrus.Warn("2.在配置文件中写入密码后重启bot.")
-//	text := utils.ReadlineWithTimeout(time.Second*5, "2")
-//	if strings.Contains("1", text) {
-//		logrus.Warn("请输入密码，并按Enter键继续（10秒后退出）：")
-//
-//		text := utils.ReadlineWithTimeout(time.Second*10, "")
-//		if len(text) <= 0 {
-//			logrus.Error("未读取到密码输入！程序即将退出.")
-//			os.Exit(1)
-//		}
-//		return text
-//	}
-//	logrus.Warnf("bot即将关闭，请在配置文件添加密码信息后启动bot！配置文件路劲-> %s", config.GetConfigFilePath())
-//	os.Exit(1)
-//	return password
-//}
 
 func handlePasswordDecrypt() [16]byte {
 	conf := goal.GetConfig()

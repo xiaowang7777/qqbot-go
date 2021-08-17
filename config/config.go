@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"qqbot-go/pkg/goal"
 	"qqbot-go/utils"
 	"runtime"
 )
@@ -38,6 +39,11 @@ type Config struct {
 			MaxTimes uint `yaml:"max_times"`
 		} `yaml:"re_login"`
 	} `yaml:"account"`
+	Server struct {
+		Type goal.ServerType `yaml:"type"`
+		Host string          `yaml:"host"`
+		Port uint8           `yaml:"port"`
+	}
 }
 
 //New 新建Config结构体，并从配置文件中读取信息
